@@ -1,0 +1,106 @@
+{
+  "nyayalens_version": "1.0.0",
+  "document_metadata": {
+    "file_name": "Shankar_Kisanrao_Khade_vs_State_Of_Maharashtra_on_25_April_2013.PDF",
+    "file_size": "384.7 KB",
+    "total_pages": 50,
+    "total_characters": 156285
+  },
+  "classification": {
+    "case_category": "Criminal",
+    "document_type": "Judgment",
+    "court_name": "Supreme Court of India",
+    "case_number": "CRIMINAL APPEAL NOs. 362-363 OF 2010",
+    "decision_date": "Extracted from document header",
+    "bench": "the High Court and the Court heard the appeal along with Confirmation Case No.1 of 2007., The High Court dismissed the appeal and the reference made by the Sessions Court was accepted, and the death sentence was confirmed. Appellant has preferred these two appeals against those"
+  },
+  "parties": [
+    {
+      "role": "Petitioner / Appellant",
+      "name": "Appellant",
+      "type": "Litigant"
+    },
+    {
+      "role": "Respondent / Opposite Party",
+      "name": "State of Maharashtra",
+      "type": "Respondent"
+    }
+  ],
+  "legal_provisions": [
+    {
+      "act_name": "Code of Criminal Procedure / Indian Penal Code",
+      "section_or_article": "Section 34",
+      "context": "Statutory citation identified in judicial narrative on Page 1.",
+      "supporting_quote": "ons 363, 366-A, 376, 302, 201 read with Section 34 IPC, for having, in furtherance of their common intention,",
+      "page_number": 1,
+      "is_applied": true
+    },
+    {
+      "act_name": "Code of Criminal Procedure / Indian Penal Code",
+      "section_or_article": "Section 302",
+      "context": "Statutory citation identified in judicial narrative on Page 1.",
+      "supporting_quote": "ccused and sentenced him to death under Section 302 IPC, subject to confirmation by the High Court and was also",
+      "page_number": 1,
+      "is_applied": true
+    },
+    {
+      "act_name": "Code of Criminal Procedure / Indian Penal Code",
+      "section_or_article": "Section 376",
+      "context": "Statutory citation identified in judicial narrative on Page 1.",
+      "supporting_quote": "t RI) for six months for offences under Section 376 IPC, further seven years RI and to pay a fine of Rs.500/- i",
+      "page_number": 1,
+      "is_applied": true
+    },
+    {
+      "act_name": "Code of Criminal Procedure / Indian Penal Code",
+      "section_or_article": "Section\n366-A",
+      "context": "Statutory citation identified in judicial narrative on Page 1.",
+      "supporting_quote": "ult to suffer RI for three months under Section 366-A IPC and five years RI and to pay a fine of Rs.500/- in defa",
+      "page_number": 1,
+      "is_applied": true
+    }
+  ],
+  "summary": {
+    "case_overview": "This document represents a Criminal court judgment before the Supreme Court of India. The court considered procedural compliance, statutory requirements, and rights of the parties.",
+    "background": "The matter arose from prior proceedings or impugned orders passed by lower authorities or dispute between the parties.",
+    "main_legal_issue": "Whether the statutory parameters under the relevant Criminal laws were satisfied to grant or decline the relief sought.",
+    "arguments": {
+      "petitioner_arguments": "The petitioner/appellant contended that the impugned action was contrary to law and prayed for intervention.",
+      "respondent_arguments": "The respondent contended that the procedural requirements were properly observed and the petition lacks merit."
+    },
+    "court_reasoning": "The court examined the record of proceedings, relevant statutory provisions, and judicial precedents to reach its determination.",
+    "final_order": "The court pronounced its judgment disposing of or regulating the proceedings in accordance with the operative directions.",
+    "important_takeaways": [
+      "Case classified under Criminal law based on document analysis.",
+      "Document identified as a Judgment.",
+      "Evidence-backed citations extracted directly from verified page text."
+    ]
+  },
+  "evidence_integrity_score": 100,
+  "evidence_items": [
+    {
+      "fact": "Citation of Section 34 in court proceedings.",
+      "quote": "ons 363, 366-A, 376, 302, 201 read with Section 34 IPC, for having, in furtherance of their common intention,",
+      "claimed_page": 1,
+      "actual_page": 1,
+      "status": "Verified (Exact Match)",
+      "confidence": 1.0
+    },
+    {
+      "fact": "Citation of Section 302 in court proceedings.",
+      "quote": "ccused and sentenced him to death under Section 302 IPC, subject to confirmation by the High Court and was also",
+      "claimed_page": 1,
+      "actual_page": 1,
+      "status": "Verified (Exact Match)",
+      "confidence": 1.0
+    },
+    {
+      "fact": "Citation of Section 376 in court proceedings.",
+      "quote": "t RI) for six months for offences under Section 376 IPC, further seven years RI and to pay a fine of Rs.500/- i",
+      "claimed_page": 1,
+      "actual_page": 1,
+      "status": "Verified (Exact Match)",
+      "confidence": 1.0
+    }
+  ]
+}

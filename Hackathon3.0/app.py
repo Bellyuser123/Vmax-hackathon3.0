@@ -39,6 +39,12 @@ from core.pdf_processor import (
 )
 from core.ai_engine import LegalAIEngine
 from core.verification_engine import VerificationStatus, VerificationResult
+from core.local_rag import (
+    build_rag_index,
+    answer_question_rag,
+    check_ollama_availability,
+    LocalRAGIndex
+)
 from sample_data.sample_cases import SAMPLE_CASES
 from sample_data.generate_sample_pdfs import generate_all_sample_pdfs
 
@@ -84,7 +90,13 @@ if "sample_pdfs_ready" not in st.session_state:
     st.session_state.sample_pdfs_ready = True
 
 if "chat_history" not in st.session_state:
-    st.session_state.chat_history: List[Dict[str, str]] = []
+    st.session_state.chat_history: List[Dict[str, Any]] = []
+
+if "rag_index" not in st.session_state:
+    st.session_state.rag_index: Optional[LocalRAGIndex] = None
+
+if "rag_doc_name" not in st.session_state:
+    st.session_state.rag_doc_name: Optional[str] = None
 
 
 # --- Helper: Render Metric Card ---
@@ -239,12 +251,14 @@ with st.sidebar:
         st.session_state.doc_data = None
         st.session_state.analysis_result = None
         st.session_state.chat_history = []
+        st.session_state.rag_index = None
+        st.session_state.rag_doc_name = None
         st.rerun()
 
     # Engine Status
     st.markdown("---")
     st.markdown("### ⚙️ Engine Telemetry")
-    st.caption("• PyMuPDF (fitz) Engine: Active\n• Page Verification Engine: Active\n• OCR Guard: Active\n• Max File Limit: 25 MB")
+    st.caption("• PyMuPDF (fitz) Engine: Active\n• Local RAG (BGE-small + FAISS): Active\n• Page Verification Engine: Active\n• OCR Guard: Active\n• Max File Limit: 25 MB")
 
 
 # ==========================================
@@ -698,9 +712,42 @@ if st.session_state.analysis_result is not None and st.session_state.doc_data is
     # -------------------------------------------------------------------------
     # TAB 7: INTERACTIVE Q&A ASSISTANT
     # -------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # TAB 7: INTERACTIVE LOCAL RAG Q&A ASSISTANT
+    # -------------------------------------------------------------------------
     with tab_qa:
-        st.markdown("### 💬 Ask NyayaLens about this Judgment")
-        st.caption("Interactive legal intelligence assistant grounded exclusively in this document.")
+        st.markdown("### 💬 Ask NyayaLens — Local Semantic RAG Assistant")
+        st.caption("Local semantic retrieval powered by BAAI/bge-small-en-v1.5 embeddings & FAISS vector search. Isolated per document, zero external LLM APIs.")
+
+        # Check Ollama Availability
+        ollama_ok, ollama_models = check_ollama_availability(timeout=0.8)
+
+        # Status & Telemetry Header
+        mode_label = f"🤖 Ollama Instruction Model Active ({ollama_models[0]})" if (ollama_ok and ollama_models) else "📄 Offline Extractive Grounding Mode (Zero API)"
+        st.markdown(f"""
+        <div style="background:rgba(18,26,43,0.5); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:0.65rem 1rem; margin-bottom:1rem; font-size:0.83rem; color:#94a3b8; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+            <div>
+                <strong style="color:#f59e0b;">🔒 Local Vector Index:</strong> FAISS (Cosine FlatIP) &nbsp;|&nbsp;
+                <strong style="color:#f59e0b;">🧬 Embeddings:</strong> BAAI/bge-small-en-v1.5
+            </div>
+            <div>
+                <span style="color:#10b981; font-weight:600;">{mode_label}</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Ensure RAG Index is Built for Current Document
+        if st.session_state.rag_index is None or st.session_state.rag_doc_name != doc.file_name:
+            if doc.is_scanned_pdf and doc.total_characters < 100:
+                st.warning("⚠️ This document contains little or no extractable text (scanned PDF). The RAG index requires text to build embeddings. Please run OCR first.")
+            else:
+                with st.spinner(f"Building local FAISS semantic index for '{doc.file_name}' using BAAI/bge-small-en-v1.5..."):
+                    idx, idx_err = build_rag_index(doc)
+                    if idx_err:
+                        st.error(f"❌ Indexing Error: {idx_err}")
+                    else:
+                        st.session_state.rag_index = idx
+                        st.session_state.rag_doc_name = doc.file_name
 
         # Suggested Questions
         st.markdown("**Suggested Quick Questions:**")
@@ -710,57 +757,113 @@ if st.session_state.analysis_result is not None and st.session_state.doc_data is
                 st.session_state.current_prompt = "What was the exact final order or relief granted by the court?"
         with q_cols[1]:
             if st.button("❓ What provisions were applied?", use_container_width=True):
-                st.session_state.current_prompt = "Which legal acts and provisions were applied and on which pages?"
+                st.session_state.current_prompt = "Which statutory provisions, sections, and acts were applied and discussed?"
         with q_cols[2]:
             if st.button("❓ What did the parties argue?", use_container_width=True):
                 st.session_state.current_prompt = "Summarize the key arguments raised by the petitioner and respondent."
+
+        # Model Option if Ollama Available
+        selected_ollama_model = None
+        if ollama_ok and ollama_models:
+            ollama_choice = st.selectbox(
+                "Local Inference Engine:",
+                ["Extractive Mode (Fast, Verbatim Quotes)"] + [f"Ollama: {m}" for m in ollama_models],
+                index=0,
+                help="Choose whether to use verbatim extractive answering or a local Ollama instruction model."
+            )
+            if ollama_choice.startswith("Ollama: "):
+                selected_ollama_model = ollama_choice.replace("Ollama: ", "").strip()
 
         # User Question Input
         user_q = st.text_input(
             "Your Question:",
             value=st.session_state.get("current_prompt", ""),
-            placeholder="e.g., Was bail granted or denied? What was the reasoning regarding Section 41-A?"
+            placeholder="e.g., Was the FIR quashed? What was the judicial reasoning regarding Section 41-A CrPC?"
         )
 
-        if st.button("Send Question", type="primary") and user_q.strip():
-            # Generate answer using document context
-            summary_obj = res.get("summary", {})
-            evidence_str = "\n".join([f"- Page {e.claimed_page}: {e.fact}" for e in res.get("evidence_items_verified", [])])
-            prov_str = "\n".join([f"- {p.get('act_name')} {p.get('section_or_article')} on Page {p.get('page_number')}" for p in res.get("legal_provisions_verified", [])])
+        col_btn1, col_btn2 = st.columns([4, 1])
+        with col_btn1:
+            send_btn = st.button("🔍 Search & Answer via Local RAG", type="primary", use_container_width=True)
+        with col_btn2:
+            if st.button("🗑️ Clear Chat", use_container_width=True):
+                st.session_state.chat_history = []
+                st.rerun()
 
-            # Immediate contextual response
-            answer = ""
-            q_lower = user_q.lower()
-            if "final order" in q_lower or "relief" in q_lower or "outcome" in q_lower:
-                answer = f"**Final Order or Outcome:**\n\n{summary_obj.get('final_order')}\n\n*Document Category:* {res.get('case_category')} | *Type:* {res.get('document_type')}"
-            elif "provision" in q_lower or "section" in q_lower or "article" in q_lower:
-                answer = f"**Key Provisions Discussed:**\n\n{prov_str}\n\n*Reasoning Context:* {summary_obj.get('court_reasoning')}"
-            elif "argument" in q_lower or "contention" in q_lower:
-                args = summary_obj.get("arguments", {})
-                answer = f"**Party Contentions:**\n\n- **Petitioner:** {args.get('petitioner_arguments')}\n- **Respondent:** {args.get('respondent_arguments')}"
+        if send_btn and user_q.strip():
+            if st.session_state.rag_index is None:
+                st.error("No semantic index available. Please upload a document with extractable text.")
             else:
-                answer = (
-                    f"**NyayaLens Judgment Analysis:**\n\n"
-                    f"Based on the analysis of **{court}** in **{case_num}**:\n\n"
-                    f"- **Core Holding:** {summary_obj.get('case_overview')}\n"
-                    f"- **Reasoning:** {summary_obj.get('court_reasoning')}\n"
-                    f"- **Outcome:** {summary_obj.get('final_order')}\n\n"
-                    f"**Verified Evidence Citations:**\n{evidence_str}"
-                )
+                with st.spinner("Retrieving top passages with FAISS & synthesizing grounded answer..."):
+                    rag_res = answer_question_rag(
+                        rag_index=st.session_state.rag_index,
+                        query=user_q.strip(),
+                        top_k=4,
+                        use_ollama_if_available=(selected_ollama_model is not None),
+                        preferred_ollama_model=selected_ollama_model
+                    )
 
-            st.session_state.chat_history.append({"q": user_q, "a": answer})
-            st.session_state.current_prompt = ""
+                st.session_state.chat_history.append({
+                    "q": user_q.strip(),
+                    "a": rag_res["answer"],
+                    "sources": rag_res["sources"],
+                    "mode": rag_res["mode"],
+                    "evidence_sufficient": rag_res["evidence_sufficient"],
+                    "top_score": rag_res.get("top_score", 0.0),
+                    "model_used": rag_res.get("model_used")
+                })
+                st.session_state.current_prompt = ""
+                st.rerun()
 
-        # Display Chat History
+        # Display Chat History with Grounded Evidence Passages
         if st.session_state.chat_history:
             st.markdown("---")
-            for chat in reversed(st.session_state.chat_history):
+            for idx, chat in enumerate(reversed(st.session_state.chat_history)):
+                is_latest = (idx == 0)
                 st.markdown(f"**Q: {chat['q']}**")
+
+                mode_badge = ""
+                if chat.get("mode") == "local_ollama":
+                    mode_badge = f'<span class="rag-score-tag">🤖 Ollama: {chat.get("model_used")}</span>'
+                elif chat.get("mode") == "extractive":
+                    mode_badge = '<span class="rag-score-tag">📄 Verbatim Extractive Grounding</span>'
+                elif chat.get("mode") == "insufficient_evidence":
+                    mode_badge = '<span class="rag-page-tag" style="background:rgba(239,68,68,0.2); color:#f87171; border-color:rgba(239,68,68,0.4);">⚠️ Insufficient Evidence</span>'
+
                 st.markdown(f"""
-                <div style="background:rgba(18,26,43,0.7); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:0.9rem 1.1rem; margin-bottom:1rem; color:#cbd5e1;">
-                    {chat['a']}
+                <div style="background:rgba(18,26,43,0.85); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:1rem 1.2rem; margin-bottom:0.75rem; color:#cbd5e1;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.6rem;">
+                        <span style="font-size:0.78rem; text-transform:uppercase; color:#94a3b8; font-weight:700;">Grounded Response</span>
+                        {mode_badge}
+                    </div>
+                    <div style="font-size:0.94rem; line-height:1.6;">
+                        {chat['a']}
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
+
+                # Render Exact Retrieved Passages & Page Attribution
+                sources = chat.get("sources", [])
+                if sources:
+                    exp_label = f"🔍 Retrieved Passages ({len(sources)} Matches from FAISS, Top Match: {int(chat.get('top_score', 0) * 100)}%)"
+                    with st.expander(exp_label, expanded=is_latest):
+                        for s in sources:
+                            score_val = getattr(s, "score", s.get("score") if isinstance(s, dict) else 0.0)
+                            p_num = getattr(s, "page_num", s.get("page_num") if isinstance(s, dict) else 1)
+                            text_val = getattr(s, "text", s.get("text") if isinstance(s, dict) else "")
+                            pct = int(score_val * 100)
+                            score_color = "#10b981" if score_val >= 0.52 else "#f59e0b"
+
+                            st.markdown(f"""
+                            <div class="rag-passage-card">
+                                <div class="rag-header-meta">
+                                    <span class="rag-page-tag">📄 Source Page {p_num}</span>
+                                    <span class="rag-score-tag" style="border-color:{score_color}; color:{score_color};">
+                                        Cosine Similarity: {pct}% ({score_val:.3f})
+                                    </span>
+                                </div>
+                                <div class="rag-passage-text">"{text_val}"</div>
+                            </div>
+                            """, unsafe_allow_html=True)
 
     # -------------------------------------------------------------------------
     # TAB 8: EXPORT LEGAL BRIEF
