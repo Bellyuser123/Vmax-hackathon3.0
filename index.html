@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NyayaLens — Indian Court Document Review &amp; Intelligence</title>
+  <meta name="description" content="Instant Indian court document classification, statutory mapping, evidence verification, and plain-English legal synthesis.">
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚖️</text></svg>">
+
+  <!-- PDF.js for in-browser PDF parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="./src/styles/main.css">
+</head>
+<body>
+
+  <!-- ===================================================================
+       TOP NAVIGATION BAR
+       Brand | 5 Focused Tabs | Explainer Guide | Utilities
+       =================================================================== -->
+  <header class="top-nav" id="topNav" data-inspector-title="Top Navigation Bar" data-inspector-desc="Primary control bar containing system brand, section tabs, UI element guide, and display utilities.">
+
+    <!-- Logo / Brand -->
+    <a href="#" class="nav-logo" aria-label="NyayaLens Home" data-inspector-title="NyayaLens Brand" data-inspector-desc="Indian Court Document Reviewer designed to decode complex legal English into structured insights.">
+      <div class="nav-logo-icon" aria-hidden="true">⚖️</div>
+      <div class="nav-logo-text">
+        <span class="nav-logo-name">
+          NyayaLens
+          <span class="nav-logo-badge">eCourts AI</span>
+        </span>
+        <span class="nav-logo-tagline" id="navCourtTagline">Supreme Court of India</span>
+      </div>
+    </a>
+
+    <!-- 5 Clean Focus Tabs — Only ONE panel visible at a time -->
+    <nav aria-label="Main sections">
+      <ul class="nav-tab-list" role="tablist">
+        <li class="nav-tab-item" role="presentation">
+          <button class="active" role="tab" data-target="panel-dossier" aria-selected="true"
+                  data-inspector-title="Tab: Bench Brief" data-inspector-desc="Complete 60-second case summary: cause title, operative order, key metrics, and 6-stage plain-English breakdown.">
+            <span>📋</span> Bench Brief
+          </button>
+        </li>
+        <li class="nav-tab-item" role="presentation">
+          <button role="tab" data-target="panel-statutes" aria-selected="false"
+                  data-inspector-title="Tab: Statute Matrix" data-inspector-desc="Categorizes all laws and sections cited or applied by the court, with direct links to verbatim quotes.">
+            <span>📜</span> Statute Matrix
+          </button>
+        </li>
+        <li class="nav-tab-item" role="presentation">
+          <button role="tab" data-target="panel-evidence" aria-selected="false"
+                  data-inspector-title="Tab: Evidence Verify" data-inspector-desc="Dual-pane verification tool: click any extracted claim on the left to highlight verbatim proof in the raw judgment on the right.">
+            <span>🔍</span> Evidence Verify
+          </button>
+        </li>
+        <li class="nav-tab-item" role="presentation">
+          <button role="tab" data-target="panel-lexicon" aria-selected="false"
+                  data-inspector-title="Tab: Legal Glossary" data-inspector-desc="Translates Latin maxims and colonial legal terms (e.g., prima facie, res judicata) into plain English.">
+            <span>🏛️</span> Legal Glossary
+          </button>
+        </li>
+        <li class="nav-tab-item" role="presentation">
+          <button role="tab" data-target="panel-qa" aria-selected="false"
+                  data-inspector-title="Tab: Ask the Case" data-inspector-desc="Instant Q&A assistant: ask any question about the case and get cited answers directly from the judgment text.">
+            <span>💬</span> Ask the Case
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Utility & Info Controls -->
+    <div class="nav-utils" aria-label="Controls and Guides">
+      <!-- Element Explainer Mode Toggle -->
+      <button class="explain-toggle-btn active" id="explainToggleBtn" title="Toggle visual element explanation mode"
+              data-inspector-title="Explain Mode Switch" data-inspector-desc="Turns on/off interactive element explanation badges and hover guides across the entire interface.">
+        <span>💡</span> Explain Mode: ON
+      </button>
+
+      <!-- UI Guide Modal Trigger -->
+      <button class="guide-btn" id="openGuideBtn" title="Open complete guide to every element on this page"
+              data-inspector-title="UI Elements Reference Guide" data-inspector-desc="Click to open a searchable directory explaining every single frontend element and metric.">
+        <span>📖</span> UI Guide
+      </button>
+
+      <!-- Accessibility Font Controls -->
+      <button class="util-btn" id="fontDecBtn" aria-label="Decrease font size" title="Make text smaller"
+              data-inspector-title="Font Size Decrement (A−)" data-inspector-desc="Reduces body font size for higher information density.">A−</button>
+      <button class="util-btn" id="fontIncBtn" aria-label="Increase font size" title="Make text larger"
+              data-inspector-title="Font Size Increment (A+)" data-inspector-desc="Increases font size for effortless readability during long court hearings.">A+</button>
+
+      <!-- Theme Switcher -->
+      <button class="util-btn" id="themeToggleBtn" aria-label="Toggle theme" title="Switch between Light and Dark mode"
+              data-inspector-title="Theme Switcher" data-inspector-desc="Toggles between crisp light mode and high-contrast dark mode.">🌓</button>
+
+      <!-- Notes Drawer Trigger -->
+      <button class="util-btn" id="openNotesBtn" aria-label="Open hearing notes" title="Open judge's hearing notes scratchpad"
+              data-inspector-title="Hearing Notes Scratchpad" data-inspector-desc="Opens a private scratchpad to take hearing notes, auto-saved locally in your browser.">📝</button>
+
+      <!-- Print Bench Memo -->
+      <button class="util-btn" id="printMemoBtn" aria-label="Print bench memorandum" title="Print a clean bench memo"
+              data-inspector-title="Print Bench Memo" data-inspector-desc="Generates a printer-friendly bench memorandum with no UI chrome or buttons.">🖨️</button>
+    </div>
+  </header>
+
+
+  <!-- ===================================================================
+       DOCKET STRIP — Select Pre-loaded Case or Upload New PDF
+       =================================================================== -->
+  <div class="docket-strip" role="region" aria-label="Case selector"
+       data-inspector-title="Case Selector Docket" data-inspector-desc="Choose from real benchmark Indian court judgments or upload your own court PDF to analyze in seconds.">
+    <div class="docket-left">
+      <span class="docket-label">
+        <span>📁</span> Benchmark Cases:
+      </span>
+
+      <div class="docket-cases" role="tablist" aria-label="Sample Indian court cases">
+        <button class="case-chip active" role="tab" aria-selected="true" data-case-id="cbi_corruption_fir" id="chip-cbi"
+                data-inspector-title="Featured Case: CBI v. C. Krishna Murthy Naidu" data-inspector-desc="CBI ACB Bhubaneswar FIR under Section 173 BNSS 2023 & Section 7 PC Act 1988: Bribe demand of ₹20,000 negotiated to ₹12,000 for ANM service extension.">
+          <span>⚖️</span>
+          <span>CBI v. C. Krishna Murthy Naidu</span>
+          <span class="chip-type">PC Act · BNSS §173</span>
+        </button>
+
+        <button class="case-chip" role="tab" aria-selected="false" data-case-id="criminal_quashing" id="chip-criminal"
+                data-inspector-title="Case: Rajesh Sharma (Supreme Court)" data-inspector-desc="Criminal Appeal: Quashing of FIR under CrPC §482 and arrest safeguards in matrimonial cruelty allegations under IPC §498A.">
+          <span>⚖️</span>
+          <span>Rajesh Sharma</span>
+          <span class="chip-type">Criminal · SC</span>
+        </button>
+
+        <button class="case-chip" role="tab" aria-selected="false" data-case-id="commercial_arbitration" id="chip-commercial"
+                data-inspector-title="Case: Nexora Infra (Delhi High Court)" data-inspector-desc="Commercial Arbitration: Section 9 interim measures seeking injunction against invocation of ₹42 Crore bank guarantees.">
+          <span>🏢</span>
+          <span>Nexora Infra</span>
+          <span class="chip-type">Commercial · HC</span>
+        </button>
+
+        <button class="case-chip" role="tab" aria-selected="false" data-case-id="constitutional_privacy" id="chip-constitutional"
+                data-inspector-title="Case: Puttaswamy (Supreme Court 9-Judge Bench)" data-inspector-desc="Constitutional Landmark: Unanimous declaration of Right to Privacy as a Fundamental Right under Article 21.">
+          <span>🏛️</span>
+          <span>Puttaswamy</span>
+          <span class="chip-type">Constitutional · SC</span>
+        </button>
+
+        <button class="case-chip" role="tab" aria-selected="false" data-case-id="cheque_bounce_ni" id="chip-ni"
+                data-inspector-title="Case: K. Ramesh (Madras High Court)" data-inspector-desc="Criminal (NI Act): Section 138 cheque dishonour and rebutting the statutory presumption of debt under Section 139.">
+          <span>💳</span>
+          <span>K. Ramesh</span>
+          <span class="chip-type">NI Act · HC</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Upload User PDF -->
+    <button class="upload-btn" id="uploadTriggerBtn" aria-label="Upload your own court document"
+            data-inspector-title="Upload Court Document" data-inspector-desc="Upload any raw Indian court judgment or order in PDF or TXT format. Parsed 100% locally in your browser.">
+      <span>📤</span> Upload Your PDF
+    </button>
+  </div>
+
+
+  <!-- ===================================================================
+       MAIN WORKSPACE
+       =================================================================== -->
+  <main class="main-wrap">
+
+    <!-- -----------------------------------------------------------------
+         PANEL 1: BENCH BRIEF (Clean, Uncongested Case Overview)
+         ----------------------------------------------------------------- -->
+    <div class="tab-panel visible" id="panel-dossier" role="tabpanel" aria-label="Bench Brief">
+
+      <!-- Friendly In-Card Ribbon Explaining Section -->
+      <div class="element-explainer-ribbon" data-inspector-title="Bench Brief Explainer" data-inspector-desc="This section provides an immediate executive briefing for judges and advocates before oral arguments begin.">
+        <div>
+          <strong>📋 Bench Brief:</strong> 60-second judicial case orientation. Review operative orders, statutory findings, and evidence verification below.
+        </div>
+        <span class="explain-tag">Bench Intelligence</span>
+      </div>
+
+      <!-- 👨‍⚖️ JUDGE'S BENCH TOOLKIT (Designed specifically for judicial officers) -->
+      <div class="judge-toolkit-card" data-inspector-title="Judge's Bench Intelligence" data-inspector-desc="Dedicated judicial workbench for the presiding judge: Cognizance check, BNSS 2023 law mapping, bail evaluation, and draft order sheet generation.">
+        <div class="judge-toolkit-top">
+          <div class="judge-toolkit-header">
+            <span class="judge-badge">👨‍⚖️ Judicial Bench Toolkit</span>
+            <h3>Pre-Cognizance &amp; Remand Intelligence for the Bench</h3>
+          </div>
+          <div class="judge-actions-row">
+            <button class="judge-action-btn primary" id="generateOrderSheetBtn" onclick="window.nyayaApp.openOrderSheetModal()" title="Generate pre-trial judicial order sheet">
+              <span>📑</span> Draft Judicial Order Sheet
+            </button>
+            <button class="judge-action-btn" id="openCognizanceBtn" onclick="window.nyayaApp.openCognizanceModal()" title="Review cognizance, territorial jurisdiction, and sanction checklist">
+              <span>⚖️</span> Cognizance Checklist
+            </button>
+            <button class="judge-action-btn" id="openLawBridgeBtn" onclick="window.nyayaApp.openLawBridgeModal()" title="Compare new BNSS 2023 provisions with old CrPC 1973 equivalents">
+              <span>🌉</span> BNSS ⇄ CrPC Law Bridge
+            </button>
+          </div>
+        </div>
+
+        <div class="judge-quick-grid">
+          <div class="jq-item" data-inspector-title="Judicial Jurisdiction" data-inspector-desc="Confirms territorial and subject-matter competence of the Special Court (CBI).">
+            <span class="jq-label">Jurisdiction Forum</span>
+            <span class="jq-val">Special Judge (CBI), Bhubaneswar</span>
+            <span class="jq-sub">Khordha Sessions Division · Competent</span>
+          </div>
+
+          <div class="jq-item" data-inspector-title="Cognizable Status" data-inspector-desc="Offence under Section 7 PC Act is cognizable; police empowered to investigate without magistrate order.">
+            <span class="jq-label">Cognizable Nature</span>
+            <span class="jq-val text-green">Cognizable Offence</span>
+            <span class="jq-sub">Section 7 PC Act · 3 to 7 Yrs Rigorous Imprisonment</span>
+          </div>
+
+          <div class="jq-item" data-inspector-title="Procedural Verification" data-inspector-desc="Satisfies Section 17A PC Act preliminary enquiry safeguard prior to regular case registration.">
+            <span class="jq-label">Preliminary Verification</span>
+            <span class="jq-val text-gold">Confirmed by SI Ayan Mishra</span>
+            <span class="jq-sub">Period: 05.10.2026 to 07.10.2026</span>
+          </div>
+
+          <div class="jq-item" data-inspector-title="Criminal Code" data-inspector-desc="Governed by the new Bharatiya Nagarik Suraksha Sanhita, 2023 (BNSS) enacted in 2024.">
+            <span class="jq-label">Procedure Code</span>
+            <span class="jq-val text-blue">BNSS, 2023 (§173)</span>
+            <span class="jq-sub">Replaces erstwhile Section 154 CrPC, 1973</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Case Dossier Header Card -->
+      <div class="dossier-hero" id="dossierHero" data-inspector-title="Case Cause Title & Dossier" data-inspector-desc="Official cause title containing party names, eCourts CNR tracking number, coram of judges, and decision date.">
+        <div class="dossier-hero-top">
+          <div class="dossier-badges" id="dossierBadges">
+            <!-- Badges populated by JS -->
+          </div>
+          <button class="info-badge" onclick="window.nyayaApp.openElementInfo('dossierHero')" title="Explain Cause Title">?</button>
+        </div>
+
+        <h1 class="dossier-title" id="dossierTitle">
+          Rajesh Sharma &amp; Ors. v. State of Uttar Pradesh &amp; Anr.
+        </h1>
+        <p class="dossier-subtitle" id="dossierSubtitle">
+          Criminal Appeal: Quashing of FIR &amp; Section 482 CrPC Safeguards Against Arbitrary Arrests
+        </p>
+
+        <div class="dossier-meta" id="dossierMeta">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- 4 High-Impact KPI Metric Cards -->
+      <div class="metrics-grid" id="metricsGrid">
+        <!-- Populated by JavaScript -->
+      </div>
+
+      <!-- Operative Decree (The Most Important Card for Judicial Review) -->
+      <div class="decree-card" id="decreeCard" data-inspector-title="Operative Decree & Court Order" data-inspector-desc="The binding judicial directive issued by the bench. States whether the appeal was allowed or dismissed, and lists mandatory conditions.">
+        <!-- Populated by JavaScript -->
+      </div>
+
+      <!-- Sub-Navigation: Prevents Congestion by splitting Breakdown & Parties -->
+      <div class="sub-nav-tabs" role="tablist" aria-label="Brief sub-sections">
+        <button class="sub-tab-btn active" id="subTabSynthesis" data-sub-target="sub-synthesis" role="tab" aria-selected="true"
+                data-inspector-title="Sub-Tab: 6-Stage Plain English Breakdown" data-inspector-desc="Step-by-step distillation of the dispute from initial facts up to the court's core legal ratio decidendi.">
+          <span>📋</span> 6-Stage Case Breakdown
+        </button>
+        <button class="sub-tab-btn" id="subTabParties" data-sub-target="sub-parties" role="tab" aria-selected="false"
+                data-inspector-title="Sub-Tab: Parties & Legal Counsel" data-inspector-desc="Identifies who filed the petition, who defended, and which senior advocates represented them.">
+          <span>👥</span> Parties &amp; Advocates
+        </button>
+      </div>
+
+      <!-- Sub-Section A: 6-Stage Case Breakdown -->
+      <div class="content-card sub-panel" id="sub-synthesis" data-inspector-title="6-Stage Plain English Breakdown" data-inspector-desc="Converts complex legalese into 6 digestible stages: Overview, Background, Question of Law, Petitioner Arguments, Respondent Arguments, and Court Reasoning.">
+        <div class="card-heading">
+          <div class="card-heading-left">
+            <span>📋</span>
+            <span>6-Stage Plain Language Case Breakdown</span>
+            <span class="card-heading-badge">AI Distilled from Legalese</span>
+          </div>
+          <button class="info-badge" onclick="window.nyayaApp.openElementInfo('synthesis')" title="Explain 6-Stage Synthesis">?</button>
+        </div>
+        <div class="synthesis-list" id="synthesisList">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+      <!-- Sub-Section B: Parties & Counsel (Hidden by default until clicked, or switchable) -->
+      <div class="content-card sub-panel" id="sub-parties" style="display:none;" data-inspector-title="Parties & Counsel" data-inspector-desc="Extracted list of Appellants, Respondents, and Senior Advocates on Record.">
+        <div class="card-heading">
+          <div class="card-heading-left">
+            <span>👥</span>
+            <span>Parties to the Dispute &amp; Appearing Advocates</span>
+            <span class="card-heading-badge">Cause Title Extraction</span>
+          </div>
+          <button class="info-badge" onclick="window.nyayaApp.openElementInfo('parties')" title="Explain Parties & Counsel">?</button>
+        </div>
+        <div class="parties-grid" id="partiesGrid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+
+    </div><!-- /panel-dossier -->
+
+
+    <!-- -----------------------------------------------------------------
+         PANEL 2: STATUTE MATRIX (Laws & Sections Categorized)
+         ----------------------------------------------------------------- -->
+    <div class="tab-panel" id="panel-statutes" role="tabpanel" aria-label="Statute Matrix">
+
+      <div class="element-explainer-ribbon" data-inspector-title="Statute Matrix Explainer" data-inspector-desc="Separates provisions the court actually relied on to decide the case from those merely cited in passing.">
+        <div>
+          <strong>📜 Statute Matrix:</strong> Real-time mapping of all Indian legal acts and sections discussed in this judgment.
+        </div>
+        <span class="explain-tag">Statutory Analysis</span>
+      </div>
+
+      <div class="section-hdr">
+        <div class="section-hdr-inner">
+          <div class="section-hdr-icon" aria-hidden="true">📜</div>
+          <div class="section-hdr-text">
+            <h2>Statute Matrix — Statutory Provisions &amp; Applications</h2>
+            <p>
+              Indian judgments frequently mention dozens of laws in passing. This matrix classifies how each section was used:
+              <strong style="color: var(--green)">Applied</strong> (enforced to decide outcome),
+              <strong style="color: var(--blue)">Interpreted</strong> (clarified by the bench), or
+              <strong style="color: var(--text-sub)">Cited</strong> (referenced without binding reliance).
+              Click <em>"Jump to Page"</em> to view verbatim proof.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-scroll" data-inspector-title="Statutes Table" data-inspector-desc="Interactive provisions matrix showing section numbers, act names, judicial usage, context, and source page jump buttons.">
+        <table class="statute-table">
+          <thead>
+            <tr>
+              <th data-inspector-title="Column: Section / Article" data-inspector-desc="The specific statutory section or constitutional article.">
+                Section / Article
+              </th>
+              <th data-inspector-title="Column: Act / Enactment" data-inspector-desc="The full title of the statute or central/state enactment.">
+                Act / Enactment
+              </th>
+              <th data-inspector-title="Column: Judicial Treatment" data-inspector-desc="How the bench handled the section: Applied, Interpreted, or Cited.">
+                How Bench Used It
+              </th>
+              <th data-inspector-title="Column: Context" data-inspector-desc="Brief summary of why this statutory provision was invoked in this matter.">
+                Legal Context
+              </th>
+              <th data-inspector-title="Column: Verbatim Source" data-inspector-desc="Direct link to jump to the raw page and highlight the supporting sentence.">
+                Verbatim Proof
+              </th>
+            </tr>
+          </thead>
+          <tbody id="statutesBody">
+            <!-- Populated by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+    </div><!-- /panel-statutes -->
+
+
+    <!-- -----------------------------------------------------------------
+         PANEL 3: EVIDENCE VERIFICATION (Dual Pane Proof Check)
+         ----------------------------------------------------------------- -->
+    <div class="tab-panel" id="panel-evidence" role="tabpanel" aria-label="Evidence Verification">
+
+      <div class="element-explainer-ribbon" data-inspector-title="Evidence Verification Explainer" data-inspector-desc="Ensures zero AI hallucination. Every claim links to an exact verbatim quote on a specific page of the original document.">
+        <div>
+          <strong>🔍 Evidence Verification:</strong> Side-by-side proof checker. Click any extracted claim on the left to see it glow in the original text on the right.
+        </div>
+        <span class="explain-tag">Hallucination Guard</span>
+      </div>
+
+      <div class="section-hdr">
+        <div class="section-hdr-inner">
+          <div class="section-hdr-icon" aria-hidden="true">🔍</div>
+          <div class="section-hdr-text">
+            <h2>Evidence Verification — Side-by-Side Proof Checker</h2>
+            <p>
+              Verify claims with zero AI hallucination. Click any extracted legal finding in the left panel — the verbatim sentence will glow gold in the original court transcript on the right.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dual-pane">
+        <!-- Left: Claims List -->
+        <aside class="ev-panel" aria-label="Extracted claims" data-inspector-title="Extracted Legal Claims" data-inspector-desc="List of key factual and statutory claims extracted from the case with verification confidence percentages.">
+          <div class="ev-panel-header">
+            <h3>🔍 Key Extracted Claims</h3>
+            <p>Click any claim to highlight verbatim proof →</p>
+          </div>
+          <div class="ev-list" id="evList">
+            <!-- Populated by JS -->
+          </div>
+        </aside>
+
+        <!-- Right: Verbatim Judgment Viewer -->
+        <article class="jv-panel" aria-label="Original document viewer" data-inspector-title="Verbatim Document Viewer" data-inspector-desc="Raw transcript of the court judgment. Displays exact page text and underlines Latin terms.">
+          <div class="jv-toolbar">
+            <div class="page-tabs" id="pageTabs" role="tablist" aria-label="Page navigation" data-inspector-title="Page Navigation Tabs" data-inspector-desc="Switch between pages of the original court judgment.">
+              <!-- Populated by JS -->
+            </div>
+            <span class="jv-label">📄 Verbatim Court Record</span>
+          </div>
+          <div class="jv-content" id="jvContent">
+            <!-- Populated by JS -->
+          </div>
+        </article>
+      </div>
+
+    </div><!-- /panel-evidence -->
+
+
+    <!-- -----------------------------------------------------------------
+         PANEL 4: LEGAL GLOSSARY (Latin Maxims Decoder)
+         ----------------------------------------------------------------- -->
+    <div class="tab-panel" id="panel-lexicon" role="tabpanel" aria-label="Legal Glossary">
+
+      <div class="element-explainer-ribbon" data-inspector-title="Legal Glossary Explainer" data-inspector-desc="Demystifies Latin maxims and colonial legal phrases commonly found in Indian court judgments.">
+        <div>
+          <strong>🏛️ Legal Glossary:</strong> Plain-English decoder for Latin maxims and archaic terms used across Indian High Courts and the Supreme Court.
+        </div>
+        <span class="explain-tag">Maxim Decoder</span>
+      </div>
+
+      <div class="section-hdr">
+        <div class="section-hdr-inner">
+          <div class="section-hdr-icon" aria-hidden="true">🏛️</div>
+          <div class="section-hdr-text">
+            <h2>Legal Glossary — Latin Maxims &amp; Judicial Phrases</h2>
+            <p>
+              Indian judgments frequently rely on classical Latin legal phrases. Type any keyword below to view plain-English definitions and example applications.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <input type="text" class="lex-search" id="lexSearch"
+             placeholder="Search term — e.g. 'prima facie', 'res judicata', 'mens rea', 'locus standi'…"
+             aria-label="Search legal glossary"
+             data-inspector-title="Glossary Search Bar" data-inspector-desc="Search through 20+ Latin maxims and archaic legal terms for immediate definitions.">
+
+      <div class="lex-grid" id="lexGrid" data-inspector-title="Glossary Cards Grid" data-inspector-desc="Cards detailing each Latin maxim's literal translation, plain-English legal meaning, and practical courtroom example.">
+        <!-- Populated by JS -->
+      </div>
+
+    </div><!-- /panel-lexicon -->
+
+
+    <!-- -----------------------------------------------------------------
+         PANEL 5: ASK THE CASE (Bench Q&A Assistant)
+         ----------------------------------------------------------------- -->
+    <div class="tab-panel" id="panel-qa" role="tabpanel" aria-label="Bench Q&A Assistant">
+
+      <div class="element-explainer-ribbon" data-inspector-title="Bench Q&A Explainer" data-inspector-desc="Directly queries the loaded case for specific details, quoting exact page and paragraph citations.">
+        <div>
+          <strong>💬 Ask the Case:</strong> Interactive assistant grounded exclusively in the current judgment. Sourced with page and paragraph citations.
+        </div>
+        <span class="explain-tag">Cited AI Assistant</span>
+      </div>
+
+      <div class="section-hdr">
+        <div class="section-hdr-inner">
+          <div class="section-hdr-icon" aria-hidden="true">💬</div>
+          <div class="section-hdr-text">
+            <h2>Ask the Case — Bench Intelligence Assistant</h2>
+            <p>
+              Ask any question about this judgment. Responses are extracted strictly from the case record and cite exact source pages to prevent speculation.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggested Quick Query Chips -->
+      <div class="qa-chips" aria-label="Suggested questions" data-inspector-title="Suggested Question Chips" data-inspector-desc="Click any suggested question to instantly query the court document.">
+        <button class="qa-chip">What specific relief did the Court grant?</button>
+        <button class="qa-chip">What conditions or directives were imposed?</button>
+        <button class="qa-chip">Is this an interim stay or final disposal?</button>
+        <button class="qa-chip">Which precedents were cited or discussed?</button>
+      </div>
+
+      <!-- Message History -->
+      <div class="qa-history" id="qaHistory" aria-live="polite" aria-label="Conversation"
+           data-inspector-title="Q&A Message Feed" data-inspector-desc="Displays the dialogue history between the user and the legal intelligence engine.">
+        <!-- Messages populated by JS -->
+      </div>
+
+      <!-- Input Row -->
+      <div class="qa-input-row" data-inspector-title="Q&A Query Input" data-inspector-desc="Type your specific question about the judgment and press Enter or click Send.">
+        <input type="text" class="qa-input" id="qaInput"
+               placeholder="Ask a question about this judgment… (e.g. 'What was the ruling on Section 498A?')"
+               aria-label="Ask a question about this judgment">
+        <button class="qa-send" id="qaSendBtn" aria-label="Send query">Send →</button>
+      </div>
+
+    </div><!-- /panel-qa -->
+
+  </main><!-- /main-wrap -->
+
+
+  <!-- ===================================================================
+       LIVE ELEMENT INSPECTOR STATUS BAR (Sticky Bottom)
+       Enables users to hover or tap ANY element to get instant plain-English info!
+       =================================================================== -->
+  <footer class="inspector-bar" id="liveInspectorBar" aria-label="Live Element Inspector">
+    <div class="inspector-content">
+      <span class="inspector-icon" aria-hidden="true">💡</span>
+      <span class="inspector-title" id="inspectorTitle">Element Inspector Active:</span>
+      <span class="inspector-desc" id="inspectorDesc">Hover over or tap any element on this screen to see what it is, why it matters, and how to use it.</span>
+    </div>
+    <div class="inspector-actions">
+      <button class="inspector-btn" id="inspectorGuideBtn">Open Full Guide</button>
+      <button class="inspector-btn" id="inspectorMinimizeBtn" title="Minimize inspector bar">Minimize</button>
+    </div>
+  </footer>
+
+
+  <!-- ===================================================================
+       MODAL 1: UI ELEMENTS REFERENCE GUIDE
+       Searchable encyclopedia of EVERY frontend element
+       =================================================================== -->
+  <div class="modal-backdrop" id="guideModal" role="dialog" aria-modal="true" aria-labelledby="guideModalTitle" aria-hidden="true">
+    <div class="modal-box">
+      <div class="modal-head">
+        <h2 id="guideModalTitle">📖 Complete UI Elements &amp; Features Guide</h2>
+        <button class="drawer-close" id="closeGuideBtn" aria-label="Close guide dialog">✕</button>
+      </div>
+      <p class="modal-sub">
+        Explore every element on the NyayaLens interface. Learn what each metric means, how statutory mapping works, and how to navigate Indian court judgments effortlessly.
+      </p>
+
+      <input type="text" class="guide-search-input" id="guideSearchInput" placeholder="Filter elements — e.g. 'CNR', 'Decree', 'Ratio', 'Statute', 'Notes'…" aria-label="Filter UI guide elements">
+
+      <div class="guide-elements-grid" id="guideElementsGrid">
+        <!-- Populated by JavaScript with all 18+ components -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===================================================================
+       MODAL 2: UPLOAD COURT DOCUMENT MODAL
+       =================================================================== -->
+  <div class="modal-backdrop" id="uploadModal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle" aria-hidden="true">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-head">
+        <h2 id="uploadModalTitle">📤 Upload an Indian Court Document</h2>
+        <button class="drawer-close" id="closeUploadBtn" aria-label="Close upload dialog">✕</button>
+      </div>
+      <p class="modal-sub">
+        Upload any court judgment or order as a <strong>PDF</strong> or <strong>.txt</strong> file.
+        NyayaLens parses the text completely inside your browser — extracting cause titles, classifying case categories, mapping statutes, and isolating the operative decree with zero server uploads.
+      </p>
+
+      <div class="drop-zone" id="dropZone" role="button" tabindex="0" aria-label="Drag and drop file here or click to browse">
+        <div class="drop-icon" aria-hidden="true">📄</div>
+        <div class="drop-main">Drag &amp; Drop court PDF or TXT here</div>
+        <div class="drop-sub">Runs 100% locally in your browser · Maximum confidentiality</div>
+        <label class="drop-select-btn" for="fileInput">Browse Local File</label>
+        <input type="file" id="fileInput" accept=".pdf,.txt" style="display:none" aria-label="Select file">
+      </div>
+
+      <div class="upload-status" id="uploadStatus" aria-live="polite"></div>
+    </div>
+  </div>
+
+
+  <!-- ===================================================================
+       DRAWER: JUDGE'S PRIVATE HEARING NOTES
+       =================================================================== -->
+  <div class="overlay-dim" id="overlayDim" aria-hidden="true"></div>
+
+  <aside class="notes-drawer" id="notesDrawer" aria-label="Hearing notes scratchpad" aria-hidden="true">
+    <div class="drawer-head">
+      <h3>📝 Hearing Notes Scratchpad</h3>
+      <button class="drawer-close" id="closeNotesBtn" aria-label="Close notes drawer">✕</button>
+    </div>
+    <p class="drawer-head-sub">
+      Your private judicial scratchpad. Record oral arguments, bench directives, or questions for legal research. Autosaved locally to your browser.
+    </p>
+    <textarea class="notes-textarea" id="notesTextarea" placeholder="Draft hearing notes, dictate oral submissions, or note draft orders…" aria-label="Hearing notes"></textarea>
+    <div class="drawer-foot">
+      <button class="drawer-btn danger" id="clearNotesBtn" aria-label="Clear notes">🗑️ Clear</button>
+      <button class="drawer-btn" id="printNotesBtn" aria-label="Print notes">🖨️ Print Memo</button>
+    </div>
+  </aside>
+
+
+  <!-- ===================================================================
+       MODAL 3: JUDICIAL PRE-TRIAL ORDER SHEET GENERATOR
+       =================================================================== -->
+  <div class="modal-backdrop" id="orderSheetModal" role="dialog" aria-modal="true" aria-labelledby="orderSheetModalTitle" aria-hidden="true">
+    <div class="modal-box" style="max-width: 860px;">
+      <div class="modal-head">
+        <h2 id="orderSheetModalTitle">📑 Official Pre-Trial Judicial Order Sheet</h2>
+        <div style="display:flex;gap:8px">
+          <button class="judge-action-btn primary" onclick="window.nyayaApp.printOrderSheet()" title="Print judicial order sheet">🖨️ Print Order</button>
+          <button class="drawer-close" id="closeOrderSheetBtn" aria-label="Close order sheet dialog">✕</button>
+        </div>
+      </div>
+      <p class="modal-sub">
+        Standard formatted judicial order sheet prepared from the Case Report / FIR for the Special Judge (CBI) / Magistrate Bench.
+      </p>
+
+      <div class="order-sheet-paper" id="orderSheetPaperContent">
+        <!-- Rendered by JavaScript -->
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===================================================================
+       MODAL 4: JUDICIAL COGNIZANCE & SANCTION CHECKLIST
+       =================================================================== -->
+  <div class="modal-backdrop" id="cognizanceModal" role="dialog" aria-modal="true" aria-labelledby="cognizanceModalTitle" aria-hidden="true">
+    <div class="modal-box" style="max-width: 720px;">
+      <div class="modal-head">
+        <h2 id="cognizanceModalTitle">⚖️ Judicial Cognizance &amp; Sanction Scrutiny Checklist</h2>
+        <button class="drawer-close" id="closeCognizanceBtn" aria-label="Close cognizance dialog">✕</button>
+      </div>
+      <p class="modal-sub">
+        Statutory checklist for judicial officers evaluating corruption FIRs under the Prevention of Corruption Act, 1988 &amp; BNSS 2023.
+      </p>
+
+      <div style="display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:65vh;padding:4px;">
+        <div class="guide-item-card">
+          <div class="guide-item-top">
+            <div class="guide-item-name"><span>🏛️</span> 1. Territorial &amp; Subject-Matter Jurisdiction</div>
+            <span class="guide-item-category">Special Court</span>
+          </div>
+          <div class="guide-item-desc">
+            The Special Judge for CBI cases at Bhubaneswar is vested with jurisdiction under the DSPE Act for central agency investigations within Odisha. Offence location (EMRS Nuapada) is within the supervisory purview.
+          </div>
+        </div>
+
+        <div class="guide-item-card">
+          <div class="guide-item-top">
+            <div class="guide-item-name"><span>👤</span> 2. Public Servant Classification (§2(c) PC Act)</div>
+            <span class="guide-item-category">Accused Status</span>
+          </div>
+          <div class="guide-item-desc">
+            Accused Shri C. Krishna Murthy Naidu serves as Principal in an Eklavya Model Residential School (EMRS), a government-funded institution under the Ministry of Tribal Affairs / State Society, satisfying Section 2(c) public servant criteria.
+          </div>
+        </div>
+
+        <div class="guide-item-card">
+          <div class="guide-item-top">
+            <div class="guide-item-name"><span>🛡️</span> 3. Section 17A PC Act Approval vs. Trap Proviso</div>
+            <span class="guide-item-category">Pre-Inquiry Rule</span>
+          </div>
+          <div class="guide-item-desc">
+            Section 17A mandates prior approval for inquiry into official recommendations. However, the proviso clarifies that where the allegation involves acceptance of illegal gratification or on-the-spot trap, no prior approval is required. Independent verification by SI Ayan Mishra satisfies threshold scrutiny.
+          </div>
+        </div>
+
+        <div class="guide-item-card">
+          <div class="guide-item-top">
+            <div class="guide-item-name"><span>📜</span> 4. Section 19 Sanction for Judicial Cognizance</div>
+            <span class="guide-item-category">Cognizance Stage</span>
+          </div>
+          <div class="guide-item-desc">
+            Sanction for prosecution under Section 19 is mandatory before taking formal cognizance upon submission of the final charge-sheet under Section 193 BNSS. It is NOT required at the FIR registration or remand monitoring stage.
+          </div>
+        </div>
+
+        <div class="guide-item-card">
+          <div class="guide-item-top">
+            <div class="guide-item-name"><span>⚖️</span> 5. Pre-Trial Custody &amp; Remand Factors (§187 BNSS)</div>
+            <span class="guide-item-category">Remand Review</span>
+          </div>
+          <div class="guide-item-desc">
+            Section 7 PC Act carries 3 to 7 years imprisonment. If custodial arrest is made, the Court scrutinizes: (i) risk of tampering with subordinate staff records, (ii) necessity of trap recovery verification, and (iii) compliance with Section 35(3) BNSS written arrest reasons.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===================================================================
+       MODAL 5: BNSS 2023 ⇄ CrPC 1973 LAW BRIDGE
+       =================================================================== -->
+  <div class="modal-backdrop" id="lawBridgeModal" role="dialog" aria-modal="true" aria-labelledby="lawBridgeModalTitle" aria-hidden="true">
+    <div class="modal-box" style="max-width: 780px;">
+      <div class="modal-head">
+        <h2 id="lawBridgeModalTitle">🌉 Bharatiya Nagarik Suraksha Sanhita (BNSS) ⇄ CrPC 1973 Law Bridge</h2>
+        <button class="drawer-close" id="closeLawBridgeBtn" aria-label="Close law bridge dialog">✕</button>
+      </div>
+      <p class="modal-sub">
+        Comparative cross-reference guide to help judicial officers seamlessly transition between old criminal codes and new 2024–2026 enactments.
+      </p>
+
+      <div style="overflow-x:auto;">
+        <table class="law-bridge-table">
+          <thead>
+            <tr>
+              <th>Procedural Subject</th>
+              <th>New Criminal Code (BNSS, 2023)</th>
+              <th>Old Code (CrPC, 1973)</th>
+              <th>Judicial Significance in Corruption Cases</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Registration of FIR</strong></td>
+              <td><span class="mono-pill">Section 173</span></td>
+              <td>Section 154</td>
+              <td>Mandates electronic/written FIR and free copy to informant (ROAC).</td>
+            </tr>
+            <tr>
+              <td><strong>Notice of Appearance / Arrest Safeguards</strong></td>
+              <td><span class="mono-pill">Section 35(3)</span></td>
+              <td>Section 41-A</td>
+              <td>Mandatory for offenses punishable under 7 years unless arrest reasons recorded.</td>
+            </tr>
+            <tr>
+              <td><strong>Remand &amp; Police Custody</strong></td>
+              <td><span class="mono-pill">Section 187</span></td>
+              <td>Section 167</td>
+              <td>Authorizes 15 days police custody in whole or parts during initial 40/60 days.</td>
+            </tr>
+            <tr>
+              <td><strong>Mandatory Audio-Video Recording</strong></td>
+              <td><span class="mono-pill">Section 105</span></td>
+              <td><em>New Provision</em></td>
+              <td>Search and seizure operations must be captured on video/camera.</td>
+            </tr>
+            <tr>
+              <td><strong>Examination of Witnesses</strong></td>
+              <td><span class="mono-pill">Section 180</span></td>
+              <td>Section 161</td>
+              <td>Permits statement recording via electronic means for vulnerable victims.</td>
+            </tr>
+            <tr>
+              <td><strong>Submission of Police Report / Charge-sheet</strong></td>
+              <td><span class="mono-pill">Section 193</span></td>
+              <td>Section 173(2)</td>
+              <td>Final report requiring Section 19 PC Act sanction for cognizance.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Application Controller -->
+  <script type="module" src="./src/scripts/app.js"></script>
+
+</body>
+</html>
