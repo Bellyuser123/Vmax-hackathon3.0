@@ -1,0 +1,3 @@
+# NyayaLens — PDF Upload, Validation, and Text Extraction Module
+pymupdf>=1.24.0
+pytest>=8.0.0
